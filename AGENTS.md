@@ -24,3 +24,17 @@ A small online store used for the Perth AI "Matt Pocock skills" workshop. The bu
 ## Non-goals
 
 No payment gateway, admin area or real shipping address. Keep changes small enough to review in one sitting.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on `ming-johanson/pai`, driven via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default triage labels are used as-is: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` at the repo root plus `docs/adr/` for decisions. See `docs/agents/domain.md`.
