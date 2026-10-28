@@ -35,8 +35,11 @@ class AuthService:
             raise ValueError("Current password is incorrect")
         self.db.update_password(user.email, hash_password(new_password))
 
+    def find_user(self, email: str) -> User | None:
+        return self.db.get_user_by_email(email)
+
     def current_user(self, email: str) -> User:
-        user = self.db.get_user_by_email(email)
+        user = self.find_user(email)
         if not user:
             raise ValueError("Unknown user")
         return user

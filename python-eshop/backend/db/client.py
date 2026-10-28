@@ -151,6 +151,19 @@ class DatabaseClient:
                 role=role,
             )
 
+    def users_have_roles(self) -> bool:
+        with self._connection() as conn:
+            columns = conn.execute("PRAGMA table_info(users)").fetchall()
+            return any(column["name"] == "role" for column in columns)
+
+    def add_user_roles(self, default_role: str) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                "ALTER TABLE users ADD COLUMN role TEXT NOT NULL "
+                f"DEFAULT '{default_role}' "
+                "CHECK (role IN ('rep', 'organiser', 'supplier'))"
+            )
+
     def update_password(self, email: str, password_hash: str) -> None:
         with self._connection() as conn:
             conn.execute(

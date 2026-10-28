@@ -89,11 +89,14 @@ def get_current_user_email(
 def require_authenticated_user(
     user_email: str | None = Depends(get_current_user_email),
 ) -> str:
+    """The signed-in user's email; 401 when there is no valid, live account."""
     if not user_email:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
         )
+    if get_auth_service().find_user(user_email) is None:
+        raise _invalid_session()
     return user_email
 
 

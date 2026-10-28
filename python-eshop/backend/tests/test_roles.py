@@ -151,3 +151,53 @@ def test_wrong_current_password_changes_nothing(client, demo_headers):
 
     assert response.status_code == 400
     login(client, DEMO_EMAIL, DEMO_PASSWORD)
+
+
+def test_token_for_a_deleted_user_is_a_401_not_a_crash(client):
+    from db.seed import DEMO_EMAIL
+    from tests.test_basket_identity import make_token
+
+    headers = {"Authorization": f"Bearer {make_token(sub='ghost@example.com')}"}
+
+    assert client.get("/api/auth/me", headers=headers).status_code == 401
+    assert client.post("/api/organiser/users", json={
+        "email": "x@example.com", "password": "secret123", "role": "rep"
+    }, headers=headers).status_code == 401
+    assert DEMO_EMAIL  # the demo user is untouched by this test
+
+
+def test_older_databases_gain_roles_and_the_new_accounts(tmp_path, monkeypatch):
+    import sqlite3
+
+    from fastapi.testclient import TestClient
+
+    from config import settings
+
+    old = tmp_path / "old.db"
+    conn = sqlite3.connect(old)
+    conn.executescript(
+        """
+        CREATE TABLE catalog_brands (id INTEGER PRIMARY KEY AUTOINCREMENT, brand TEXT NOT NULL);
+        CREATE TABLE catalog_types (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL);
+        CREATE TABLE catalog_items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL,
+          description TEXT NOT NULL, price REAL NOT NULL, picture_uri TEXT NOT NULL,
+          catalog_brand_id INTEGER NOT NULL, catalog_type_id INTEGER NOT NULL);
+        CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL);
+        INSERT INTO catalog_brands (brand) VALUES ('Old');
+        INSERT INTO catalog_types (type) VALUES ('Mug');
+        INSERT INTO catalog_items VALUES (1, 'Mug', 'Mug', 1.0, '/static/images/products/1.png', 1, 1);
+        INSERT INTO users (email, password_hash) VALUES ('old@example.com', 'x');
+        """
+    )
+    conn.commit()
+    conn.close()
+    monkeypatch.setattr(settings, "database_path", str(old))
+    from main import app
+
+    with TestClient(app) as client:
+        assert login(client, ORGANISER_EMAIL, ORGANISER_PASSWORD)
+        assert login(client, SUPPLIER_EMAIL, SUPPLIER_PASSWORD)
+    conn = sqlite3.connect(old)
+    role = conn.execute("SELECT role FROM users WHERE email = 'old@example.com'").fetchone()[0]
+    assert role == "rep"

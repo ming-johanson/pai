@@ -56,11 +56,9 @@ def seed_database(db: DatabaseClient) -> None:
                 (name, description, price, picture_uri, brand_id, type_id),
             )
 
-        for email, password, role in SEED_USERS:
-            conn.execute(
-                "INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)",
-                (email, hash_password(password), role),
-            )
+
+    for email, password, role in SEED_USERS:
+        db.create_user(email, hash_password(password), role)
 
 
 RENAMED_PRODUCTS = {
@@ -90,6 +88,20 @@ def migrate_catalog(db: DatabaseClient) -> None:
               AND id NOT IN (SELECT catalog_type_id FROM catalog_items)
             """
         )
+
+
+def migrate_users(db: DatabaseClient) -> None:
+    """Bring a database from before roles existed up to date.
+
+    Older databases have a ``users`` table with no ``role`` column and only
+    the demo shopper. Existing accounts become reps; the organiser and
+    supplier accounts are added if they are missing.
+    """
+    if not db.users_have_roles():
+        db.add_user_roles(default_role="rep")
+    for email, password, role in SEED_USERS:
+        if db.get_user_by_email(email) is None:
+            db.create_user(email, hash_password(password), role)
 
 
 def sync_picture_uris(db: DatabaseClient) -> None:
