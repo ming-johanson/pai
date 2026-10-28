@@ -126,22 +126,37 @@ class DatabaseClient:
     def get_user_by_email(self, email: str) -> User | None:
         with self._connection() as conn:
             row = conn.execute(
-                "SELECT id, email, password_hash FROM users WHERE email = ?",
+                "SELECT id, email, password_hash, role FROM users WHERE email = ?",
                 (email.lower(),),
             ).fetchone()
             if not row:
                 return None
             return User(
-                id=row["id"], email=row["email"], password_hash=row["password_hash"]
+                id=row["id"],
+                email=row["email"],
+                password_hash=row["password_hash"],
+                role=row["role"],
             )
 
-    def create_user(self, email: str, password_hash: str) -> User:
+    def create_user(self, email: str, password_hash: str, role: str) -> User:
         with self._connection() as conn:
             cursor = conn.execute(
-                "INSERT INTO users (email, password_hash) VALUES (?, ?)",
-                (email.lower(), password_hash),
+                "INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)",
+                (email.lower(), password_hash, role),
             )
-            return User(id=cursor.lastrowid, email=email.lower(), password_hash=password_hash)
+            return User(
+                id=cursor.lastrowid,
+                email=email.lower(),
+                password_hash=password_hash,
+                role=role,
+            )
+
+    def update_password(self, email: str, password_hash: str) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                "UPDATE users SET password_hash = ? WHERE email = ?",
+                (password_hash, email.lower()),
+            )
 
     def get_basket_by_buyer_id(self, buyer_id: str) -> Basket | None:
         with self._connection() as conn:

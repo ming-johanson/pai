@@ -1,5 +1,4 @@
 import socket
-import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -29,16 +28,9 @@ def client(tmp_path, monkeypatch):
         yield test_client
 
 
-@pytest.fixture
-def anon_headers():
-    return {"X-Basket-Id": str(uuid.uuid4())}
-
-
-def login(client, email=DEMO_EMAIL, password=DEMO_PASSWORD, headers=None):
+def login(client, email=DEMO_EMAIL, password=DEMO_PASSWORD):
     response = client.post(
-        "/api/auth/login",
-        json={"email": email, "password": password},
-        headers=headers or {},
+        "/api/auth/login", json={"email": email, "password": password}
     )
     assert response.status_code == 200, response.text
     return {"Authorization": f"Bearer {response.json()['access_token']}"}

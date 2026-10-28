@@ -4,47 +4,42 @@ from jose import jwt
 
 from config import settings
 from db.client import DatabaseClient
-from services.basket_service import BasketService, parse_anonymous_basket_id
+from models.entities import User
 from services.passwords import hash_password, verify_password
 
 
+class DuplicateEmailError(Exception):
+    pass
+
+
 class AuthService:
-    def __init__(self, db: DatabaseClient, basket_service: BasketService):
+    def __init__(self, db: DatabaseClient):
         self.db = db
-        self.basket_service = basket_service
 
-    def register(
-        self, email: str, password: str, anonymous_basket_id: str | None = None
-    ) -> tuple[str, str]:
-        existing = self.db.get_user_by_email(email)
-        if existing:
-            raise ValueError("Email already registered")
-
-        user = self.db.create_user(email, hash_password(password))
-
-        self._merge_anonymous_basket(anonymous_basket_id, user.email)
-
-        token = self._create_token(user.email)
-        return token, user.email
-
-    def login(
-        self, email: str, password: str, anonymous_basket_id: str | None = None
-    ) -> tuple[str, str]:
+    def login(self, email: str, password: str) -> tuple[str, str, str]:
         user = self.db.get_user_by_email(email)
         if not user or not verify_password(password, user.password_hash):
             raise ValueError("Invalid email or password")
 
-        self._merge_anonymous_basket(anonymous_basket_id, user.email)
-
         token = self._create_token(user.email)
-        return token, user.email
+        return token, user.email, user.role
 
-    def _merge_anonymous_basket(self, anonymous_basket_id: str | None, email: str) -> None:
-        if not anonymous_basket_id:
-            return
-        anonymous_id = parse_anonymous_basket_id(anonymous_basket_id)
-        if anonymous_id is not None:
-            self.basket_service.transfer_basket(anonymous_id, email)
+    def create_account(self, email: str, password: str, role: str) -> User:
+        if self.db.get_user_by_email(email):
+            raise DuplicateEmailError("An account with that email already exists")
+        return self.db.create_user(email, hash_password(password), role)
+
+    def change_password(self, email: str, current_password: str, new_password: str) -> None:
+        user = self.current_user(email)
+        if not verify_password(current_password, user.password_hash):
+            raise ValueError("Current password is incorrect")
+        self.db.update_password(user.email, hash_password(new_password))
+
+    def current_user(self, email: str) -> User:
+        user = self.db.get_user_by_email(email)
+        if not user:
+            raise ValueError("Unknown user")
+        return user
 
     def _create_token(self, email: str) -> str:
         expire = timedelta(minutes=settings.jwt_expire_minutes)

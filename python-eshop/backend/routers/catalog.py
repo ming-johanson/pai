@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, Query
 
-from dependencies import get_catalog_service
+from dependencies import get_catalog_service, require_authenticated_user
 from models.schemas import CatalogBrandResponse, CatalogListResponse, CatalogTypeResponse
 from services.catalog_service import CatalogService
 
-router = APIRouter(prefix="/api/catalog", tags=["catalog"])
+router = APIRouter(
+    prefix="/api/catalog",
+    tags=["catalog"],
+    dependencies=[Depends(require_authenticated_user)],
+)
 
 
 @router.get("/brands", response_model=list[CatalogBrandResponse])

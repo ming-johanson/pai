@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -78,10 +78,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-4 text-center text-sm text-slate-500">
-          No account?{' '}
-          <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-            Register
-          </Link>
+          Accounts are created by the conference organiser. Ask them if you don't have one.
         </p>
       </div>
     </div>

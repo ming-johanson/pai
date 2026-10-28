@@ -5,10 +5,15 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [email, setEmail] = useState(api.getEmail());
+  const [role, setRole] = useState(api.getRole());
   const [basketCount, setBasketCount] = useState(0);
   const isAuthenticated = Boolean(email && api.getToken());
 
   const refreshBasket = useCallback(async () => {
+    if (!api.getToken()) {
+      setBasketCount(0);
+      return;
+    }
     try {
       const basket = await api.getBasket();
       setBasketCount(basket.item_count);
@@ -23,23 +28,22 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (loginEmail, password) => {
     const result = await api.login(loginEmail, password);
-    api.setAuth(result.access_token, result.email);
+    api.setAuth(result.access_token, result.email, result.role);
     setEmail(result.email);
+    setRole(result.role);
     await refreshBasket();
     return result;
   }, [refreshBasket]);
 
-  const register = useCallback(async (registerEmail, password) => {
-    const result = await api.register(registerEmail, password);
-    api.setAuth(result.access_token, result.email);
-    setEmail(result.email);
-    await refreshBasket();
-    return result;
-  }, [refreshBasket]);
+  const changePassword = useCallback(
+    (currentPassword, newPassword) => api.changePassword(currentPassword, newPassword),
+    [],
+  );
 
   useEffect(() => {
     function handleExpired() {
       setEmail(null);
+      setRole(null);
       setBasketCount(0);
       const from = window.location.pathname;
       if (from !== '/login') {
@@ -53,20 +57,22 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     api.clearAuth();
     setEmail(null);
+    setRole(null);
     setBasketCount(0);
   }, []);
 
   const value = useMemo(
     () => ({
       email,
+      role,
       isAuthenticated,
       basketCount,
       refreshBasket,
       login,
-      register,
+      changePassword,
       logout,
     }),
-    [email, isAuthenticated, basketCount, refreshBasket, login, register, logout],
+    [email, role, isAuthenticated, basketCount, refreshBasket, login, changePassword, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

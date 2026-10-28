@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from dependencies import Buyer, get_basket_service, get_buyer
+from dependencies import get_basket_service, require_authenticated_user
 from models.schemas import (
     AddBasketItemRequest,
     BasketResponse,
@@ -13,20 +13,20 @@ router = APIRouter(prefix="/api/basket", tags=["basket"])
 
 @router.get("", response_model=BasketResponse)
 def get_basket(
-    buyer: Buyer = Depends(get_buyer),
+    buyer_id: str = Depends(require_authenticated_user),
     service: BasketService = Depends(get_basket_service),
 ):
-    return service.get_or_create_basket(buyer.id)
+    return service.get_or_create_basket(buyer_id)
 
 
 @router.post("/items", response_model=BasketResponse)
 def add_item(
     body: AddBasketItemRequest,
-    buyer: Buyer = Depends(get_buyer),
+    buyer_id: str = Depends(require_authenticated_user),
     service: BasketService = Depends(get_basket_service),
 ):
     try:
-        return service.add_item(buyer.id, body.catalog_item_id, body.quantity)
+        return service.add_item(buyer_id, body.catalog_item_id, body.quantity)
     except QuantityLimitError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except ValueError as exc:
@@ -36,10 +36,10 @@ def add_item(
 @router.put("/items", response_model=BasketResponse)
 def update_items(
     body: UpdateBasketItemsRequest,
-    buyer: Buyer = Depends(get_buyer),
+    buyer_id: str = Depends(require_authenticated_user),
     service: BasketService = Depends(get_basket_service),
 ):
     try:
-        return service.set_quantities(buyer.id, body.quantities)
+        return service.set_quantities(buyer_id, body.quantities)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))

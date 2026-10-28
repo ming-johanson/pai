@@ -4,17 +4,17 @@ from db.client import DatabaseClient
 from db.seed import migrate_catalog, seed_database
 
 
-def test_every_type_in_the_filter_has_products(client):
-    for catalog_type in client.get("/api/catalog/types").json():
-        body = client.get("/api/catalog/items", params={"type_id": catalog_type["id"]}).json()
+def test_every_type_in_the_filter_has_products(client, demo_headers):
+    for catalog_type in client.get("/api/catalog/types", headers=demo_headers).json():
+        body = client.get("/api/catalog/items", headers=demo_headers, params={"type_id": catalog_type["id"]}).json()
         assert body["total_count"] > 0, catalog_type["type"]
 
 
-def test_pin_products_are_listed_as_pins(client):
-    types = {t["type"]: t["id"] for t in client.get("/api/catalog/types").json()}
+def test_pin_products_are_listed_as_pins(client, demo_headers):
+    types = {t["type"]: t["id"] for t in client.get("/api/catalog/types", headers=demo_headers).json()}
     assert "Sheet" not in types
 
-    pins = client.get("/api/catalog/items", params={"type_id": types["Pin"]}).json()
+    pins = client.get("/api/catalog/items", headers=demo_headers, params={"type_id": types["Pin"]}).json()
     names = sorted(item["name"] for item in pins["items"])
     assert names == [".NET Foundation Pin", "Cup<T> Pin", "Roslyn Red Pin"]
 

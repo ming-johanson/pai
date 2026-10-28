@@ -30,7 +30,7 @@ cd python-eshop/backend && uv sync && uv run python run.py
 cd python-eshop/frontend && npm install && npm run dev
 ```
 
-Open http://127.0.0.1:4321 and sign in with `demouser@perthai.com.au` / `Pass@word1`.
+Open http://127.0.0.1:4321 and sign in with `demouser@perthai.com.au` / `Pass@word1` (a sponsor rep). The organiser and supplier accounts are listed in `python-eshop/README.md`.
 
 ## Run the tests
 

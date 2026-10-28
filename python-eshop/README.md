@@ -70,17 +70,25 @@ npm run dev
 
 The Vite dev server proxies `/api` and `/static` to the backend.
 
-## Demo account
+## Seeded accounts
 
-| Email | Password |
-|---|---|
-| `demouser@perthai.com.au` | `Pass@word1` |
+Nothing in the shop is public and there is no self-service registration: every
+account is created by the organiser. The seed creates one of each role.
+
+| Role | Email | Password |
+|---|---|---|
+| rep (demo sponsor rep) | `demouser@perthai.com.au` | `Pass@word1` |
+| organiser | `organiser@perthai.com.au` | `Organise@1` |
+| supplier | `supplier@perthai.com.au` | `Supply@1` |
+
+Any signed-in user can change their password from the account page (click
+your email in the header).
 
 ## Shopping flow
 
-1. Browse the catalog — filter by brand/type, paginate (10 items per page)
-2. Add items to basket — works anonymously via `X-Basket-Id` stored in `localStorage`
-3. Login or register — anonymous basket merges into your account
+1. Sign in — every page redirects to the sign-in form until you do
+2. Browse the catalog — filter by brand/type, paginate (10 items per page)
+3. Add items to basket — the basket is kept on the server under your account
 4. Checkout — review order, click **Pay now** (uses a hardcoded shipping address like the original)
 5. View orders — **My Orders** in the header
 
@@ -88,14 +96,20 @@ The Vite dev server proxies `/api` and `/static` to the backend.
 
 | Method | Route | Auth |
 |---|---|---|
-| GET | `/api/catalog/items` | Public |
-| GET | `/api/catalog/brands` | Public |
-| GET | `/api/catalog/types` | Public |
-| GET | `/api/basket` | JWT or `X-Basket-Id` |
-| POST | `/api/basket/items` | JWT or `X-Basket-Id` |
-| PUT | `/api/basket/items` | JWT or `X-Basket-Id` |
-| POST | `/api/auth/register` | Public |
+| GET | `/api/health` | Public |
 | POST | `/api/auth/login` | Public |
+| GET | `/api/auth/me` | JWT required |
+| POST | `/api/auth/password` | JWT required |
+| GET | `/api/catalog/items` | JWT required |
+| GET | `/api/catalog/brands` | JWT required |
+| GET | `/api/catalog/types` | JWT required |
+| GET | `/api/basket` | JWT required |
+| POST | `/api/basket/items` | JWT required |
+| PUT | `/api/basket/items` | JWT required |
 | POST | `/api/orders` | JWT required |
 | GET | `/api/orders` | JWT required |
 | GET | `/api/orders/{id}` | JWT required |
+| POST | `/api/organiser/users` | JWT, organiser role |
+
+A JWT for the wrong role gets a 403; a missing, expired or tampered token gets
+a 401 and never falls back to anonymous access.

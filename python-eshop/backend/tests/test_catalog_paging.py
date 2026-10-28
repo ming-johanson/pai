@@ -3,11 +3,11 @@ import pytest
 from db.client import DatabaseClient
 
 
-def test_page_past_the_end_lands_on_the_last_page(client):
-    first = client.get("/api/catalog/items").json()
+def test_page_past_the_end_lands_on_the_last_page(client, demo_headers):
+    first = client.get("/api/catalog/items", headers=demo_headers).json()
     last_page = first["total_pages"]
 
-    body = client.get("/api/catalog/items", params={"page": 999}).json()
+    body = client.get("/api/catalog/items", headers=demo_headers, params={"page": 999}).json()
 
     assert body["page"] == last_page
     assert body["items"]
@@ -15,24 +15,24 @@ def test_page_past_the_end_lands_on_the_last_page(client):
 
 
 @pytest.mark.parametrize("page", [0, -3])
-def test_page_zero_or_negative_is_the_first_page(client, page):
-    response = client.get("/api/catalog/items", params={"page": page})
+def test_page_zero_or_negative_is_the_first_page(client, demo_headers, page):
+    response = client.get("/api/catalog/items", headers=demo_headers, params={"page": page})
 
     assert response.status_code == 200
     assert response.json()["page"] == 1
 
 
-def test_filter_that_matches_nothing_is_still_empty(client):
-    body = client.get("/api/catalog/items", params={"brand_id": 9999}).json()
+def test_filter_that_matches_nothing_is_still_empty(client, demo_headers):
+    body = client.get("/api/catalog/items", headers=demo_headers, params={"brand_id": 9999}).json()
 
     assert body["items"] == []
     assert body["total_count"] == 0
     assert body["page"] == 1
 
 
-def test_paging_through_the_seeded_catalog_is_unchanged(client):
-    one = client.get("/api/catalog/items", params={"page": 1}).json()
-    two = client.get("/api/catalog/items", params={"page": 2}).json()
+def test_paging_through_the_seeded_catalog_is_unchanged(client, demo_headers):
+    one = client.get("/api/catalog/items", headers=demo_headers, params={"page": 1}).json()
+    two = client.get("/api/catalog/items", headers=demo_headers, params={"page": 2}).json()
 
     ids = [item["id"] for item in one["items"] + two["items"]]
     assert ids == sorted(set(ids))

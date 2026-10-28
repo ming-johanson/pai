@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from pydantic_core import PydanticCustomError
@@ -68,21 +68,15 @@ class UpdateBasketItemsRequest(BaseModel):
     quantities: dict[str, LineQuantity]
 
 
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=6)
-
-    @field_validator("password")
-    @classmethod
-    def password_fits_bcrypt(cls, value: str) -> str:
-        if len(value.encode("utf-8")) > MAX_PASSWORD_BYTES:
-            raise PydanticCustomError(
-                "password_too_long",
-                "Password must be at most {limit} bytes "
-                "(72 plain characters, fewer with accents or emoji)",
-                {"limit": MAX_PASSWORD_BYTES},
-            )
-        return value
+def password_fits_bcrypt(value: str) -> str:
+    if len(value.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        raise PydanticCustomError(
+            "password_too_long",
+            "Password must be at most {limit} bytes "
+            "(72 plain characters, fewer with accents or emoji)",
+            {"limit": MAX_PASSWORD_BYTES},
+        )
+    return value
 
 
 class LoginRequest(BaseModel):
@@ -94,6 +88,30 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     email: str
+    role: str
+
+
+class CurrentUserResponse(BaseModel):
+    email: str
+    role: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6)
+
+    _fits_bcrypt = field_validator("new_password")(password_fits_bcrypt)
+
+
+Role = Literal["rep", "organiser", "supplier"]
+
+
+class CreateUserRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
+    role: Role
+
+    _fits_bcrypt = field_validator("password")(password_fits_bcrypt)
 
 
 class OrderItemResponse(BaseModel):

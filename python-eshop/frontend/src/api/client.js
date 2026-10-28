@@ -1,23 +1,12 @@
-const BASKET_ID_KEY = 'eshop_basket_id';
 const TOKEN_KEY = 'eshop_token';
 const EMAIL_KEY = 'eshop_email';
-
-function getBasketId() {
-  let id = localStorage.getItem(BASKET_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(BASKET_ID_KEY, id);
-  }
-  return id;
-}
+const ROLE_KEY = 'eshop_role';
 
 function getAuthHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     headers.Authorization = `Bearer ${token}`;
-  } else {
-    headers['X-Basket-Id'] = getBasketId();
   }
   return headers;
 }
@@ -27,10 +16,7 @@ export const SESSION_EXPIRED_EVENT = 'eshop:session-expired';
 function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(EMAIL_KEY);
-}
-
-function rotateBasketId() {
-  localStorage.removeItem(BASKET_ID_KEY);
+  localStorage.removeItem(ROLE_KEY);
 }
 
 async function request(path, options = {}) {
@@ -45,8 +31,8 @@ async function request(path, options = {}) {
   });
 
   if (response.status === 401 && sentToken) {
-    // The session expired or was tampered with. End it and send the shopper
-    // to sign in again; their basket is safe on the server under their email.
+    // The session expired or was tampered with. End it and send the user
+    // to sign in again; their basket is safe on the server.
     clearSession();
     window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
   }
@@ -64,19 +50,16 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  getBasketId,
   getToken: () => localStorage.getItem(TOKEN_KEY),
   getEmail: () => localStorage.getItem(EMAIL_KEY),
-  setAuth(token, email) {
+  getRole: () => localStorage.getItem(ROLE_KEY),
+  setAuth(token, email, role) {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(EMAIL_KEY, email);
-    // The anonymous basket has just been merged into this account, so the
-    // next anonymous session on this browser starts with a fresh id.
-    rotateBasketId();
+    localStorage.setItem(ROLE_KEY, role);
   },
   clearAuth() {
     clearSession();
-    rotateBasketId();
   },
   isAuthenticated() {
     return Boolean(localStorage.getItem(TOKEN_KEY));
@@ -103,23 +86,15 @@ export const api = {
       body: JSON.stringify({ quantities }),
     }),
 
-  register: (email, password) =>
-    request('/api/auth/register', {
-      method: 'POST',
-      headers: {
-        ...getAuthHeaders(),
-        'X-Basket-Id': getBasketId(),
-      },
-      body: JSON.stringify({ email, password }),
-    }),
   login: (email, password) =>
     request('/api/auth/login', {
       method: 'POST',
-      headers: {
-        ...getAuthHeaders(),
-        'X-Basket-Id': getBasketId(),
-      },
       body: JSON.stringify({ email, password }),
+    }),
+  changePassword: (currentPassword, newPassword) =>
+    request('/api/auth/password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     }),
 
   createOrder: (basketId) =>

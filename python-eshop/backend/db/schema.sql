@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS catalog_items (
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('rep', 'organiser', 'supplier'))
 );
 
 CREATE TABLE IF NOT EXISTS baskets (

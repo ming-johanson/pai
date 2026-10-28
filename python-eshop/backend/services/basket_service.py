@@ -1,5 +1,3 @@
-import uuid
-
 from db.client import DatabaseClient
 from models.schemas import MAX_LINE_QUANTITY, BasketItemResponse, BasketResponse
 
@@ -10,20 +8,6 @@ class EmptyBasketError(Exception):
 
 class QuantityLimitError(Exception):
     pass
-
-
-def parse_anonymous_basket_id(value: str) -> str | None:
-    """The canonical form of an anonymous basket id, or None if it isn't one.
-
-    Anonymous baskets are keyed by a client-generated UUID and signed-in
-    baskets by email, so only a UUID may ever address an anonymous basket.
-    """
-    try:
-        parsed = uuid.UUID(value)
-    except (ValueError, AttributeError, TypeError):
-        return None
-    canonical = str(parsed)
-    return canonical if canonical == value.strip().lower() else None
 
 
 class BasketService:
@@ -73,29 +57,6 @@ class BasketService:
         self.db.remove_empty_basket_items(basket.id)
         updated = self.db.get_basket_by_id(basket.id)
         return self._to_response(updated)
-
-    def transfer_basket(self, anonymous_id: str, user_email: str) -> None:
-        anonymous_basket = self.db.get_basket_by_buyer_id(anonymous_id)
-        if not anonymous_basket or not anonymous_basket.items:
-            return
-
-        user_basket = self.db.get_basket_by_buyer_id(user_email)
-        if not user_basket:
-            user_basket = self.db.create_basket(user_email)
-
-        existing = {item.catalog_item_id: item.quantity for item in user_basket.items}
-        for item in anonymous_basket.items:
-            room = MAX_LINE_QUANTITY - existing.get(item.catalog_item_id, 0)
-            if room <= 0:
-                continue
-            self.db.add_basket_item(
-                user_basket.id,
-                item.catalog_item_id,
-                item.unit_price,
-                min(item.quantity, room),
-            )
-
-        self.db.delete_basket(anonymous_basket.id)
 
     def _to_response(self, basket) -> BasketResponse:
         items = [

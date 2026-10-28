@@ -17,7 +17,7 @@ A small online store used for the Perth AI "Matt Pocock skills" workshop. The bu
 
 - Every behaviour change lands with a backend test in `python-eshop/backend/tests/`. Use the `client` fixture; it runs the API against a throwaway database.
 - Keep HTTP concerns in `routers/`, rules in `services/`, SQL in `db/client.py`.
-- Anonymous baskets are keyed by a UUID, signed-in baskets by email. Never let one address the other.
+- Nothing is public: every route except health and login requires a signed-in user. Users carry a role (`rep`, `organiser`, `supplier`); organiser-only and supplier-only routes go through the `require_role` dependency so a wrong role is always a 403.
 - Store times as timezone-aware UTC.
 - Show evidence: run the tests and paste the output before saying something works.
 

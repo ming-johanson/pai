@@ -21,6 +21,16 @@ PRODUCTS = [
 
 DEMO_EMAIL = "demouser@perthai.com.au"
 DEMO_PASSWORD = "Pass@word1"
+ORGANISER_EMAIL = "organiser@perthai.com.au"
+ORGANISER_PASSWORD = "Organise@1"
+SUPPLIER_EMAIL = "supplier@perthai.com.au"
+SUPPLIER_PASSWORD = "Supply@1"
+
+SEED_USERS = [
+    (DEMO_EMAIL, DEMO_PASSWORD, "rep"),
+    (ORGANISER_EMAIL, ORGANISER_PASSWORD, "organiser"),
+    (SUPPLIER_EMAIL, SUPPLIER_PASSWORD, "supplier"),
+]
 
 
 def seed_database(db: DatabaseClient) -> None:
@@ -46,11 +56,11 @@ def seed_database(db: DatabaseClient) -> None:
                 (name, description, price, picture_uri, brand_id, type_id),
             )
 
-        password_hash = hash_password(DEMO_PASSWORD)
-        conn.execute(
-            "INSERT INTO users (email, password_hash) VALUES (?, ?)",
-            (DEMO_EMAIL, password_hash),
-        )
+        for email, password, role in SEED_USERS:
+            conn.execute(
+                "INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)",
+                (email, hash_password(password), role),
+            )
 
 
 RENAMED_PRODUCTS = {

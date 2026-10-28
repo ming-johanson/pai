@@ -49,20 +49,17 @@ export default function Header() {
               >
                 My Orders
               </NavLink>
-              <span className="hidden text-sm text-slate-500 sm:inline">{email}</span>
+              <Link to="/account" className="hidden text-sm text-slate-500 hover:text-slate-900 sm:inline">
+                {email}
+              </Link>
               <button type="button" onClick={logout} className="btn-secondary">
                 Logout
               </button>
             </>
           ) : (
-            <>
-              <Link to="/login" className="btn-secondary">
-                Login
-              </Link>
-              <Link to="/register" className="btn-primary">
-                Register
-              </Link>
-            </>
+            <Link to="/login" className="btn-primary">
+              Sign in
+            </Link>
           )}
         </nav>
       </div>
